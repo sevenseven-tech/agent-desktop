@@ -165,8 +165,9 @@ def list_windows() -> str:
     lines = []
     for wid in r.stdout.split():
         name = _run(["xdotool", "getwindowname", wid])
-        title = name.stdout.strip().replace("\n", " ") if name.returncode == 0 else "?"
-        lines.append(f"{wid} | {title}")
+        title = name.stdout.strip().replace("\n", " ") if name.returncode == 0 else ""
+        if title:  # skip unnamed override-redirect/desktop windows
+            lines.append(f"{wid} | {title}")
     return "\n".join(lines) if lines else "no visible windows"
 
 
@@ -182,12 +183,18 @@ def activate_window(window_id: str) -> str:
 
 @mcp.tool()
 def open_url(url: str) -> str:
-    """Open a URL in the desktop browser (xdg-open / $BROWSER)."""
+    """Open a URL as a new tab in the RUNNING browser. Uses CDP (the live
+    logged-in instance); falls back to xdg-open/$BROWSER when CDP is down.
+    (Launching $BROWSER directly would spawn a SECOND instance on another
+    profile - invisible to CDP and to the agent's browser tools.)"""
     url = validate_url(url)
+    r = _run(["curl", "-sf", "-m", "5", "-X", "PUT", f"http://127.0.0.1:9222/json/new?{url}"])
+    if r.returncode == 0:
+        return f"opened {url} as a new tab in the running browser (CDP)"
     browser = os.environ.get("BROWSER") or "xdg-open"
     subprocess.Popen([browser, url], env=_env(),
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return f"opening {url}"
+    return f"CDP unavailable, opened {url} via {browser}"
 
 
 if __name__ == "__main__":
