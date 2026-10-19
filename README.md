@@ -83,7 +83,11 @@ docker run -d -p 6080:6080 -p 127.0.0.1:8931:8931 \
   agent-desktop-mcp
 ```
 
-Endpoint: `http://127.0.0.1:8931/mcp` with `Authorization: Bearer $MCP_TOKEN`.
+Endpoint (browser tools): `http://127.0.0.1:8931/mcp` with `Authorization: Bearer $MCP_TOKEN`.
+Endpoint (desktop actions): `http://127.0.0.1:8931/desktop` - same token, one auth
+proxy, one audit stream, path-routed. Tools: `screenshot`, `click`, `type_text`,
+`key`, `scroll`, `list_windows`, `activate_window`, `open_url` (X11 via
+xdotool/imagemagick on display :1).
 The auth proxy enforces the token per request, validates `Origin` when a
 browser-context client sends one, rewrites `Host` for the upstream's
 DNS-rebinding protection, and logs one JSON audit line per request to stdout.

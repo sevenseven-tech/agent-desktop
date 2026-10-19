@@ -26,6 +26,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 LISTEN_PORT = int(os.environ.get("MCP_PORT", "8931"))
 UPSTREAM_PORT = int(os.environ.get("MCP_UPSTREAM_PORT", "8930"))
+DESKTOP_UPSTREAM_PORT = int(os.environ.get("MCP_DESKTOP_UPSTREAM_PORT", "8932"))
 TOKEN = os.environ.get("MCP_TOKEN", "")
 ORIGINS = [o.strip() for o in os.environ.get("MCP_ALLOWED_ORIGINS", "").split(",") if o.strip()]
 HOP_BY_HOP = {"host", "authorization", "content-length", "connection",
@@ -49,7 +50,10 @@ class Proxy(BaseHTTPRequestHandler):
 
     def _check(self):
         auth = self.headers.get("Authorization", "")
-        if not hmac.compare_digest(auth, "Bearer " + TOKEN):
+        # compare on UTF-8 BYTES: str-compare_digest raises TypeError on any
+        # non-ASCII character, which would kill the handler thread before a
+        # response is sent (silent 000 for every request).
+        if not hmac.compare_digest(auth.encode("utf-8"), ("Bearer " + TOKEN).encode("utf-8")):
             return 401
         origin = self.headers.get("Origin", "")
         if origin and origin not in ORIGINS:
@@ -71,10 +75,17 @@ class Proxy(BaseHTTPRequestHandler):
             return
         body = self.rfile.read(length) if length else None
         headers = {k: v for k, v in self.headers.items() if k.lower() not in HOP_BY_HOP}
-        headers["Host"] = "localhost:%d" % UPSTREAM_PORT
+        # Path routing: /desktop* -> desktop_actions (rewritten to its /mcp
+        # mount point); everything else -> playwright-mcp. Host is normalized
+        # PER UPSTREAM (each enforces Host == localhost:<its own port>).
+        if self.path.split("?")[0].rstrip("/").startswith("/desktop"):
+            upstream, upath = DESKTOP_UPSTREAM_PORT, "/mcp"
+        else:
+            upstream, upath = UPSTREAM_PORT, self.path
+        headers["Host"] = "localhost:%d" % upstream
         try:
-            conn = http.client.HTTPConnection("127.0.0.1", UPSTREAM_PORT)
-            conn.request(self.command, self.path, body=body, headers=headers)
+            conn = http.client.HTTPConnection("127.0.0.1", upstream)
+            conn.request(self.command, upath, body=body, headers=headers)
             resp = conn.getresponse()
         except OSError:
             audit(502, self.command, self.path, origin, self.client_address)

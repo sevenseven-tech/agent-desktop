@@ -18,6 +18,12 @@ if [ "${CDP_AUTOSTART:-true}" = "true" ]; then
             --port 8930 --host 127.0.0.1 \
             --shared-browser-context
     ) &
+    # desktop_actions: X11 tools via xdotool/imagemagick; needs the X socket
+    # (display :1 created by Xvnc in start.sh a few seconds into boot).
+    (
+        for i in $(seq 1 60); do [ -e /tmp/.X11-unix/X1 ] && break; sleep 2; done
+        exec /opt/dmcp/bin/python /app/desktop_actions.py
+    ) &
     python3 /usr/local/bin/mcp_forward.py &
 fi
 exec /usr/local/bin/supervise.sh

@@ -51,6 +51,14 @@ jobs:
           AUTH="Bearer ${MCP_SMOKE_VALUE}"
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8931/mcp)" = "401" || { echo "no-token should be 401"; exit 1; }
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: $AUTH" -H 'Origin: https://evil.example' http://127.0.0.1:8931/mcp)" = "403" || { echo "bad origin should be 403"; exit 1; }
+          # desktop-actions route: authed initialize (waits for X + uvicorn), no-token deny
+          DESK=000
+          for i in $(seq 1 45); do
+            DESK=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: $AUTH" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' http://127.0.0.1:8931/desktop)
+            [ "$DESK" = "200" ] && break; sleep 2
+          done
+          test "$DESK" = "200" || { echo "desktop initialize should be 200, got $DESK"; exit 1; }
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8931/desktop)" = "401" || { echo "desktop no-token should be 401"; exit 1; }
           docker logs admcp | grep -c mcp_http || { echo "audit lines missing"; exit 1; }
           docker rm -f admcp
       - name: Push on main
