@@ -29,8 +29,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # value, so a fresh home picks it up and a deliberate user override still wins.
 COPY xfconf-defaults/xsettings.xml /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 
-# Default browser override via env var (chromium also installed)
-ENV BROWSER=/usr/bin/firefox-esr
+# Default browser override via env var (both browsers installed).
+# Chromium is the image default (agent-first posture); flip to
+# /usr/bin/firefox-esr for human daily-driver deployments.
+ENV BROWSER=/usr/bin/chromium
 
 # VNC starting resolution (changeable at runtime via resize=remote)
 ENV VNC_RESOLUTION=1920x1080

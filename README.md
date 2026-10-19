@@ -88,7 +88,8 @@ CDP (9223) and the planned MCP ports must stay cluster-internal - see
 | `VNC_RESOLUTION` | `1920x1080` | Initial desktop size (browser resize events follow after) |
 | `VNC_DEPTH` | `24` | Color depth |
 | `VNC_PASSWORD` | (unset) | If set, VNC requires a password. If unset, **open access** - set it on any non-localhost bind |
-| `BROWSER` | `/usr/bin/firefox-esr` | Default browser for the desktop |
+| `BROWSER` | `/usr/bin/chromium` | Default browser for the desktop (firefox-esr also installed; use it for human daily-driver boxes) |
+| `CDP_AUTOSTART` | `true` | cdp layer only: `false` disables the Chromium CDP autostart + forwarder, making the desktop behave like the plain base image |
 
 ## Security model (short version)
 
