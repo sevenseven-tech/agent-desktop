@@ -9,13 +9,16 @@ FROM debian:stable-slim
 # fonts-dejavu-core, and without it fontconfig resolves the generic
 # "Sans"/"sans-serif" to Liberation MONO (verified on a pristine container),
 # rendering the whole desktop monospaced. fonts-urw-base35 provides Nimbus
-# Sans, URW's Helvetica-metric clone, used as the default UI font below.
+# Sans (the configured Net/DefaultFont). fonts-noto-core + fonts-noto-cjk
+# give real glyph coverage for multilingual web content (CJK is NOT in
+# noto-core on Debian - without noto-cjk, zh/ja/ko render as tofu boxes).
 #
 # iputils-ping + bind9-dnsutils: ping / host / dig / nslookup were also
 # Recommends-only casualties and are needed for in-desktop network debugging.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4-session xfce4-settings xfwm4 xfdesktop4 xfce4-panel xfce4-terminal thunar \
-    dbus-x11 x11-utils xfonts-base fonts-liberation fonts-dejavu-core fonts-urw-base35 \
+    dbus-x11 x11-utils xfonts-base fonts-liberation fonts-dejavu-core fonts-urw-base35 fonts-noto-core \
+    fonts-noto-cjk \
     tigervnc-standalone-server tigervnc-tools \
     curl wget procps net-tools openssl python3 ca-certificates \
     iputils-ping bind9-dnsutils \
