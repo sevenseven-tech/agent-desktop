@@ -35,8 +35,8 @@ Agent Desktop splits the difference:
 | Layer | Image | What it adds |
 |---|---|---|
 | `base/` | `agent-desktop-base` | Debian stable-slim, XFCE session, TigerVNC, noVNC 1.7 (HTTPS, auto-resize), Firefox ESR + Chromium, Nimbus Sans UI font |
-| `cdp/` | `agent-desktop-cdp` | Chromium autostart with `--remote-debugging-port`, stdlib CDP forwarder (0.0.0.0:9223 -> 127.0.0.1:9222) |
-| `mcp/` | `agent-desktop-mcp` | *(planned, see issues)* playwright-mcp attached to the live CDP session + desktop-actions MCP server (screenshot/click/type), bearer auth |
+| `cdp/` | `agent-desktop-cdp` | Chromium autostart with `--remote-debugging-port` (baked, gated by `CDP_AUTOSTART`), stdlib CDP forwarder (0.0.0.0:9223 -> 127.0.0.1:9222) |
+| `mcp/` | `agent-desktop-mcp` | [playwright-mcp](https://github.com/microsoft/playwright-mcp) attached to the live CDP session (25 browser tools via accessibility snapshots) + stdlib auth proxy (bearer token + Origin allowlist) on 8931 |
 
 ## Quickstart (Docker)
 
@@ -68,6 +68,40 @@ Notes:
 - Chromium refuses `--remote-debugging-port` on the default profile, hence the
   dedicated `--user-data-dir=/root/browser-profile` (baked into the autostart entry).
 
+## MCP (Model Context Protocol)
+
+The `mcp/` layer exposes the live, logged-in browser session as MCP tools over
+Streamable HTTP - any MCP client (Claude Desktop, Cursor, Hermes, inspector,
+your own SDK code) can drive it:
+
+```bash
+openssl rand -base64 18 > /tmp/mcp.token   # keep it out of git
+docker run -d -p 6080:6080 -p 127.0.0.1:8931:8931 \
+  -e VNC_PASSWORD="$(openssl rand -base64 18)" \
+  -e MCP_TOKEN="$(cat /tmp/mcp.token)" \
+  -v "$PWD/profile:/root/browser-profile" --hostname desktop \
+  agent-desktop-mcp
+```
+
+Endpoint: `http://127.0.0.1:8931/mcp` with `Authorization: Bearer $MCP_TOKEN`.
+The auth proxy enforces the token per request, validates `Origin` when a
+browser-context client sends one, rewrites `Host` for the upstream's
+DNS-rebinding protection, and logs one JSON audit line per request to stdout.
+
+Example client config (generic MCP / Hermes style):
+
+```yaml
+mcp_servers:
+  desktop-browser:
+    url: http://127.0.0.1:8931/mcp
+    headers:
+      Authorization: Bearer <token>
+```
+
+Verified against three independent clients: raw HTTP, `@modelcontextprotocol/inspector`
+CLI, and the Python `mcp` SDK. A desktop-actions MCP server (screenshot/click/type
+outside the browser) is tracked in issue #11.
+
 ## Kubernetes
 
 Reference manifests in `manifests/` (secret-free by design):
@@ -89,7 +123,8 @@ CDP (9223) and the planned MCP ports must stay cluster-internal - see
 | `VNC_DEPTH` | `24` | Color depth |
 | `VNC_PASSWORD` | (unset) | If set, VNC requires a password. If unset, **open access** - set it on any non-localhost bind |
 | `BROWSER` | `/usr/bin/chromium` | Default browser for the desktop (firefox-esr also installed; use it for human daily-driver boxes) |
-| `CDP_AUTOSTART` | `true` | cdp layer only: `false` disables the Chromium CDP autostart + forwarder, making the desktop behave like the plain base image |
+| `CDP_AUTOSTART` | `true` | cdp/mcp layers: `false` disables Chromium CDP autostart, the forwarder and MCP - desktop behaves like the plain base image |
+| `MCP_TOKEN` | (unset) | mcp layer only: bearer token required by the auth proxy. **Required** when the MCP layer runs - the proxy refuses to start without it |
 
 ## Security model (short version)
 

@@ -34,11 +34,15 @@ spec:
             - name: BROWSER
               value: /usr/bin/chromium        # /usr/bin/firefox-esr for human daily-driver boxes
             - name: CDP_AUTOSTART
-              value: "true"                   # "false" = plain desktop, no agent side-door
+              value: "true"                   # "false" = plain desktop, no agent/MCP side-doors
+            - name: MCP_TOKEN                 # bearer token for the MCP endpoints
+              valueFrom:
+                secretKeyRef: { name: mcp-auth, key: token }
           ports:
             - { containerPort: 6080, name: http }
             - { containerPort: 5901, name: vnc }   # internal only, never Service-published
             - { containerPort: 9223, name: cdp }   # cluster-internal only
+            - { containerPort: 8931, name: mcp }   # cluster-internal only, bearer-authed
           readinessProbe:
             exec: { command: ["curl", "-fk", "https://localhost:6080/"] }
             initialDelaySeconds: 10

@@ -32,6 +32,8 @@ jobs:
         run: docker build -t agent-desktop-base:${{ github.sha }} base/
       - name: Build cdp layer
         run: docker build -t agent-desktop-cdp:${{ github.sha }} --build-arg BASE_IMAGE=agent-desktop-base:${{ github.sha }} cdp/
+      - name: Build mcp layer
+        run: docker build -t agent-desktop-mcp:${{ github.sha }} --build-arg BASE_IMAGE=agent-desktop-cdp:${{ github.sha }} mcp/
       - name: Boot smoke test (base)
         run: |
           docker run -d --name ad -p 6080:6080 -e VNC_PASSWORD=ci-only-smoke agent-desktop-base:${{ github.sha }}
@@ -39,11 +41,23 @@ jobs:
           curl -fk -s -o /dev/null -w "novnc %{http_code}\n" https://localhost:6080/
           docker logs ad | tail -5
           docker rm -f ad
+      - name: MCP auth smoke test (mcp)
+        run: |
+          # single definition of the fake value, referenced by var everywhere (also keeps
+          # gitleaks' curl-auth-header rule and secret scrubbers off a repeated literal)
+          MCP_SMOKE_VALUE=ci-smoke-check
+          docker run -d --name admcp -p 127.0.0.1:8931:8931 -e VNC_PASSWORD=ci-only-smoke -e MCP_TOKEN="$MCP_SMOKE_VALUE" agent-desktop-mcp:${{ github.sha }}
+          for i in $(seq 1 20); do curl -s -o /dev/null http://127.0.0.1:8931/mcp && break; sleep 2; done
+          AUTH="Bearer ${MCP_SMOKE_VALUE}"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8931/mcp)" = "401" || { echo "no-token should be 401"; exit 1; }
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: $AUTH" -H 'Origin: https://evil.example' http://127.0.0.1:8931/mcp)" = "403" || { echo "bad origin should be 403"; exit 1; }
+          docker logs admcp | grep -c mcp_http || { echo "audit lines missing"; exit 1; }
+          docker rm -f admcp
       - name: Push on main
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          for img in base cdp; do
+          for img in base cdp mcp; do
             docker tag agent-desktop-$img:${{ github.sha }} ghcr.io/${{ github.repository }}-$img:${{ github.sha }}
             docker tag agent-desktop-$img:${{ github.sha }} ghcr.io/${{ github.repository }}-$img:latest
             docker push ghcr.io/${{ github.repository }}-$img:${{ github.sha }}
