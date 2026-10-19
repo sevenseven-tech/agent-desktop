@@ -1,0 +1,7 @@
+# never commit real secrets or local state
+*.pem
+*.key
+*secret*.local.yaml
+.env
+profile/
+desktop-data/

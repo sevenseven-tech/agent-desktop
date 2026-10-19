@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Chromium (CDP)
+Exec=/usr/bin/chromium --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --user-data-dir=/root/browser-profile --remote-debugging-port=9222
+X-GNOME-Autostart-enabled=true

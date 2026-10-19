@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: desktop
+  namespace: desktop
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # RWO profile volume: never two pods at once
+  selector:
+    matchLabels:
+      app: desktop
+  template:
+    metadata:
+      labels:
+        app: desktop
+    spec:
+      hostname: desktop     # REQUIRED: chromium profile state ties to hostname
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: desktop
+          # Pin a version + verify the digest after rollout; ':latest' with
+          # IfNotPresent is a silent no-op upgrade trap.
+          image: ghcr.io/sevenseven-tech/agent-desktop-cdp:latest
+          imagePullPolicy: Always
+          env:
+            - name: VNC_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: vnc-password, key: password }
+            - name: VNC_RESOLUTION
+              value: "1920x1080"
+            - name: VNC_DEPTH
+              value: "24"
+            - name: BROWSER
+              value: /usr/bin/chromium
+          ports:
+            - { containerPort: 6080, name: http }
+            - { containerPort: 5901, name: vnc }   # internal only, never Service-published
+            - { containerPort: 9223, name: cdp }   # cluster-internal only
+          readinessProbe:
+            exec: { command: ["curl", "-fk", "https://localhost:6080/"] }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            exec: { command: ["curl", "-fk", "https://localhost:6080/"] }
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 4
+          resources:
+            requests: { cpu: 200m, memory: 1Gi }
+            limits: { cpu: "2", memory: 4Gi }
+          volumeMounts:
+            - { name: profile, mountPath: /root/browser-profile }
+            - { name: autostart, mountPath: /root/.config/autostart }
+      volumes:
+        - name: profile
+          persistentVolumeClaim: { claimName: agent-desktop-profile }
+        - name: autostart
+          configMap: { name: desktop-autostart }

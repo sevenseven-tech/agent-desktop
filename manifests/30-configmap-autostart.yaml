@@ -1,0 +1,14 @@
+# Chromium autostart with the CDP debugging port (cdp layer only).
+# Mounted at /root/.config/autostart so the agent session survives pod restarts.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: desktop-autostart
+  namespace: desktop
+data:
+  chromium.desktop: |
+    [Desktop Entry]
+    Type=Application
+    Name=Chromium (CDP)
+    Exec=/usr/bin/chromium --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --user-data-dir=/root/browser-profile --remote-debugging-port=9222
+    X-GNOME-Autostart-enabled=true

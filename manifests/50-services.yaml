@@ -1,0 +1,27 @@
+# Cluster-internal service: agents reach CDP here; keep it ClusterIP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: desktop
+  namespace: desktop
+spec:
+  type: ClusterIP
+  selector:
+    app: desktop
+  ports:
+    - { name: novnc, port: 6080, targetPort: 6080 }
+    - { name: cdp, port: 9223, targetPort: 9223 }
+---
+# Human-facing noVNC. Put your auth proxy / Ingress in front of this one only.
+# Raw VNC 5901 is deliberately absent: no TLS, sniffable password.
+apiVersion: v1
+kind: Service
+metadata:
+  name: desktop-novnc
+  namespace: desktop
+spec:
+  type: NodePort
+  selector:
+    app: desktop
+  ports:
+    - { name: http, port: 6080, targetPort: 6080, nodePort: 30080 }

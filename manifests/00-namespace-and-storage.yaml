@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: desktop
+---
+# Browser profile persistence. hostPath PVs with Retain are fine for
+# single-node microk8s/k3s; use your storage class on real clusters.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agent-desktop-profile-pv
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: agent-desktop-manual
+  hostPath:
+    path: /srv/agent-desktop/profile
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agent-desktop-profile
+  namespace: desktop
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: agent-desktop-manual
+  volumeName: agent-desktop-profile-pv
+  resources:
+    requests:
+      storage: 2Gi
