@@ -100,15 +100,26 @@ def validate_scroll(amount):
 
 @mcp.tool()
 def screenshot() -> Image:
-    """Capture the whole desktop as a PNG image."""
+    """Capture the whole desktop as a JPEG image.
+
+    JPEG + downscale, not PNG: MCP clients cap single SSE events (httpx2 /
+    SDK 2.x hard-limit 1 MiB) and a PNG of a busy webpage at native res
+    exceeds it (~1.2 MB observed), which kills the call with 'SSE stream
+    ended without a response'. Target stays well under the cap."""
     r = subprocess.run(
-        ["import", "-window", "root", "png:-"], env=_env(), capture_output=True, timeout=20
+        ["import", "-window", "root", "-resize", "1600x>", "-quality", "85", "jpg:-"],
+        env=_env(), capture_output=True, timeout=20,
     )
-    if r.returncode != 0 or not r.stdout.startswith(b"\x89PNG"):
+    if r.returncode != 0 or not r.stdout.startswith(b"\xff\xd8"):
         raise RuntimeError(f"screenshot failed: {r.stderr[:200]!r}")
-    # FastMCP converts ITS Image type to ImageContent; returning a raw
-    # mcp.types.ImageContent gets stringified into TextContent (verified).
-    return Image(data=r.stdout, format="png")
+    if len(r.stdout) > 700_000:  # still huge -> re-encode smaller
+        r2 = subprocess.run(
+            ["convert", "jpg:-", "-resize", "1280x>", "-quality", "70", "jpg:-"],
+            input=r.stdout, capture_output=True, timeout=20,
+        )
+        if r2.returncode == 0 and r2.stdout.startswith(b"\xff\xd8") and len(r2.stdout) < len(r.stdout):
+            r = r2
+    return Image(data=r.stdout, format="jpeg")
 
 
 @mcp.tool()
