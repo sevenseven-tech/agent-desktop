@@ -7,13 +7,12 @@ X11 work is shelled out to xdotool/imagemagick with list-args (no shell),
 DISPLAY=:1. Argument validation is pure functions so it is unit-testable
 without an X server (tests/test_desktop_actions.py).
 """
-import base64
 import os
 import re
 import subprocess
 
 from mcp.server.fastmcp import FastMCP
-from mcp.types import ImageContent
+from mcp.server.fastmcp.utilities.types import Image
 
 DISPLAY = os.environ.get("DISPLAY", ":1")
 SCREEN_W, SCREEN_H = 7680, 4320  # generous sanity ceiling for coordinates
@@ -100,14 +99,16 @@ def validate_scroll(amount):
 # ---------- MCP tools ----------
 
 @mcp.tool()
-def screenshot() -> ImageContent:
+def screenshot() -> Image:
     """Capture the whole desktop as a PNG image."""
     r = subprocess.run(
         ["import", "-window", "root", "png:-"], env=_env(), capture_output=True, timeout=20
     )
     if r.returncode != 0 or not r.stdout.startswith(b"\x89PNG"):
         raise RuntimeError(f"screenshot failed: {r.stderr[:200]!r}")
-    return ImageContent(content=base64.b64encode(r.stdout).decode(), mimeType="image/png")
+    # FastMCP converts ITS Image type to ImageContent; returning a raw
+    # mcp.types.ImageContent gets stringified into TextContent (verified).
+    return Image(data=r.stdout, format="png")
 
 
 @mcp.tool()
