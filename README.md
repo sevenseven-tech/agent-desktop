@@ -1,5 +1,8 @@
 # Agent Desktop
 
+[![ci](https://github.com/sevenseven-tech/agent-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/sevenseven-tech/agent-desktop/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A real, logged-in desktop in a container that **both a human and an AI agent can use at the same time**.
 
 Human connects over noVNC (browser), logs in wherever needed like a normal person.
@@ -13,6 +16,19 @@ Browser (human) ──HTTPS/WebSocket──> noVNC ──> TigerVNC ──> XFCE
                                                       │
 Agent (CDP) ──ClusterIP/localhost──> cdp_forward ──> Chromium --remote-debugging-port=9222
 ```
+
+## See it
+
+One real desktop session - headed Chromium on a real X display, no headless
+fingerprint tells:
+
+![The desktop session: headed Chromium on a real X display](assets/images/desktop-session.png)
+
+The agent working the *same* session: both extra tabs were opened by the agent
+through the MCP `open_url` tool and switched with the `key` tool - zero human
+mouse or keyboard involved. The human can take over at any moment over noVNC.
+
+![Agent driving the same session via MCP](assets/images/agent-driving.png)
 
 ## Why
 
@@ -37,6 +53,9 @@ Agent Desktop splits the difference:
 | `base/` | `agent-desktop-base` | Debian stable-slim, XFCE session, TigerVNC, noVNC 1.7 (HTTPS, auto-resize), Firefox ESR + Chromium, Nimbus Sans UI font |
 | `cdp/` | `agent-desktop-cdp` | Chromium autostart with `--remote-debugging-port` (baked, gated by `CDP_AUTOSTART`), stdlib CDP forwarder (0.0.0.0:9223 -> 127.0.0.1:9222) |
 | `mcp/` | `agent-desktop-mcp` | [playwright-mcp](https://github.com/microsoft/playwright-mcp) attached to the live CDP session (25 browser tools via accessibility snapshots) + stdlib auth proxy (bearer token + Origin allowlist) on 8931 |
+
+Prebuilt images for every `main` commit: `ghcr.io/sevenseven-tech/agent-desktop-{base,cdp,mcp}`
+(tags `latest` + git SHA). Building from the Dockerfiles is fully equivalent.
 
 ## Quickstart (Docker)
 
