@@ -55,6 +55,9 @@ RUN curl -fLs --retry 3 --retry-delay 2 https://github.com/novnc/noVNC/archive/r
     curl -fLs --retry 3 --retry-delay 2 https://github.com/novnc/websockify/archive/refs/tags/v0.13.0.tar.gz \
     | tar xz --strip 1 -C /usr/share/novnc/utils/websockify
 
+# Brand the browser tab (noVNC's own UI/attribution inside stays intact)
+RUN sed -i 's#<title>noVNC</title>#<title>Agent Desktop</title>#' /usr/share/novnc/vnc.html /usr/share/novnc/vnc_lite.html
+
 # NOTE: the websockify TLS certificate (self.pem) is generated at first start
 # by start.sh, NOT baked into the image - the private key never ships in an
 # image layer and there is no expiry surprise when running old images.
