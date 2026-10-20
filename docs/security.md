@@ -11,8 +11,8 @@
 | noVNC (websockify) | 6080 | TLS + optional VNC password | NodePort/Ingress behind your auth proxy. TLS cert is generated at first start - never baked into an image |
 | Raw VNC | 5901 | password only, **no TLS** | Never published. Container-internal only |
 | CDP (Chromium) | 9222 (internal) / 9223 (forwarded) | **None** (Chrome design) | Cluster-internal / 127.0.0.1 host bind only. Never NodePort, never Ingress |
-| MCP browser tools (planned) | 8931 | Bearer token + Origin allowlist | Cluster-internal; same rules as CDP |
-| MCP desktop actions (planned) | 8932 | Bearer token + Origin allowlist | Cluster-internal; same rules as CDP |
+| MCP browser tools | 8931 | Bearer token + Origin allowlist | Cluster-internal; same rules as CDP |
+| MCP desktop actions | 8932 | Bearer token + Origin allowlist | Cluster-internal; same rules as CDP |
 
 ## MUST rules
 
