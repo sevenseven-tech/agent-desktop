@@ -15,6 +15,10 @@ FROM debian:stable-slim
 #
 # iputils-ping + bind9-dnsutils: ping / host / dig / nslookup were also
 # Recommends-only casualties and are needed for in-desktop network debugging.
+#
+# mousepad: XFCE-native GUI text editor (~2 MB, pure GTK3 already present).
+# Without it the session had NO way to open or edit a file from the desktop -
+# "Text Editor" in the apps menu launched nothing.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4-session xfce4-settings xfwm4 xfdesktop4 xfce4-panel xfce4-terminal thunar \
     dbus-x11 x11-utils xfonts-base fonts-liberation fonts-dejavu-core fonts-urw-base35 fonts-noto-core \
@@ -24,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     iputils-ping bind9-dnsutils \
     firefox-esr chromium xdg-utils \
     lsof htop diodon xclip \
+    mousepad \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Default UI font: Nimbus Sans (Helvetica clone) for GTK UI + xfwm4 titlebars.
