@@ -129,6 +129,7 @@ CDP (9223) and the planned MCP ports must stay cluster-internal - see
 | `BROWSER` | `/usr/bin/chromium` | Default browser for the desktop (firefox-esr also installed; use it for human daily-driver boxes) |
 | `CDP_AUTOSTART` | `true` | cdp/mcp layers: `false` disables Chromium CDP autostart, the forwarder and MCP - desktop behaves like the plain base image |
 | `MCP_TOKEN` | (unset) | mcp layer only: bearer token required by the auth proxy. **Required** when the MCP layer runs - the proxy refuses to start without it |
+| `CU_XGA` | `false` | mcp layer only: desktop-actions `screenshot` fits the desktop into 1024x768 (pixel-based computer-use models, Anthropic-style CU); `click`/`scroll` then take coordinates in screenshot space and map them to native pixels automatically |
 
 ## Security model (short version)
 

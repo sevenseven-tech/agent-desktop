@@ -63,5 +63,47 @@ class TestValidators(unittest.TestCase):
                 da.validate_scroll(bad)
 
 
+class TestXga(unittest.TestCase):
+    """CU_XGA geometry: xga_fit + map_xga_to_native are pure; the mapping must
+    use the same fit as the screenshot or clicks land off-target."""
+
+    def test_fit_landscape(self):
+        self.assertEqual(da.xga_fit(1920, 1080), (1024, 576))
+        self.assertEqual(da.xga_fit(2560, 1080), (1024, 432))
+        self.assertEqual(da.xga_fit(1280, 1024), (960, 768))
+
+    def test_fit_exact_and_upscale(self):
+        self.assertEqual(da.xga_fit(1024, 768), (1024, 768))
+        self.assertEqual(da.xga_fit(800, 600), (1024, 768))  # upscale to box
+        self.assertEqual(da.xga_fit(400, 300), (1024, 768))
+
+    def test_fit_always_inside_box(self):
+        for w, h in [(1920, 1080), (7680, 4320), (1024, 768), (3840, 2160), (600, 900)]:
+            sw, sh = da.xga_fit(w, h)
+            self.assertLessEqual(sw, da.XGA_W, f"{w}x{h} -> {sw}x{sh}")
+            self.assertLessEqual(sh, da.XGA_H, f"{w}x{h} -> {sw}x{sh}")
+
+    def test_map_center_and_origin(self):
+        # 1920x1080 fits to 1024x576; center of screenshot space -> center of screen
+        self.assertEqual(da.map_xga_to_native(512, 288, 1920, 1080), (960, 540))
+        self.assertEqual(da.map_xga_to_native(0, 0, 1920, 1080), (0, 0))
+
+    def test_map_bottom_right_clamped(self):
+        # fit corner maps to (near) native corner, never past the edge
+        for nw, nh in [(1920, 1080), (2560, 1080), (1280, 1024)]:
+            sw, sh = da.xga_fit(nw, nh)
+            nx, ny = da.map_xga_to_native(sw - 1, sh - 1, nw, nh)
+            self.assertTrue(0 <= nx <= nw - 1, f"{nw}x{nh} corner x={nx}")
+            self.assertTrue(0 <= ny <= nh - 1, f"{nw}x{nh} corner y={ny}")
+
+    def test_map_roundtrip_proportional(self):
+        # a point at fraction f of screenshot space lands at ~f of native
+        nw, nh = 2560, 1440
+        sw, sh = da.xga_fit(nw, nh)
+        nx, ny = da.map_xga_to_native(sw // 2, sh // 2, nw, nh)
+        self.assertLessEqual(abs(nx - nw / 2), 2)
+        self.assertLessEqual(abs(ny - nh / 2), 2)
+
+
 if __name__ == "__main__":
     unittest.main()

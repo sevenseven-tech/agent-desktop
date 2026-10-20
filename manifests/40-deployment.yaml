@@ -38,6 +38,8 @@ spec:
             - name: MCP_TOKEN                 # bearer token for the MCP endpoints
               valueFrom:
                 secretKeyRef: { name: mcp-auth, key: token }
+            # - name: CU_XGA                  # optional: XGA screenshot mode for
+            #   value: "true"                 # pixel-based computer-use models (#19)
           ports:
             - { containerPort: 6080, name: http }
             - { containerPort: 5901, name: vnc }   # internal only, never Service-published
