@@ -75,6 +75,17 @@ for i in $(seq 1 30); do
     sleep 0.5
 done
 
+# --- 2.5 Seed default GTK bookmarks if none exist (e.g. Trash) -------------
+# In the slimmed (--no-install-recommends) image GVfs exposes trash:/// fine as
+# a URI but registers no volume-monitor mountables, so Thunar never offers a
+# native Trash shortcut. A bookmark renders the same entry via the working URI.
+# Only seeds when the file is absent, so a user who removed bookmarks keeps
+# them removed (and pods with a persistent ~/.config keep their state).
+if [ ! -f "${HOME}/.config/gtk-3.0/bookmarks" ]; then
+    mkdir -p "${HOME}/.config/gtk-3.0"
+    printf 'trash:/// Trash\n' > "${HOME}/.config/gtk-3.0/bookmarks"
+fi
+
 # --- 3. Start XFCE desktop ---
 echo "[start.sh] Starting XFCE4 ..."
 startxfce4 &

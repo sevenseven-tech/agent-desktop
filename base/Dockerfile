@@ -21,6 +21,7 @@ FROM debian:stable-slim
 # "Text Editor" in the apps menu launched nothing.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4-session xfce4-settings xfwm4 xfdesktop4 xfce4-panel xfce4-terminal thunar \
+    gvfs \
     dbus-x11 x11-utils xfonts-base fonts-liberation fonts-dejavu-core fonts-urw-base35 fonts-noto-core \
     fonts-noto-cjk \
     tigervnc-standalone-server tigervnc-tools \
